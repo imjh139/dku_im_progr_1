@@ -16,8 +16,8 @@
 #define NI_NOFQDN 4 /* Only return nodename portion. */
 #define NI_NUMERICHOST 1 /* Don't try to look up hostname. */
 #define NI_NUMERICSERV 2 /* Don't convert port number to name. */
-#define NI_MAXHOST 25
-#define NI_MAXSERV 3
+//#define NI_MAXHOST 25
+//#define NI_MAXSERV 3
 
 char buffer[1024];
 pthread_t tids[100];
