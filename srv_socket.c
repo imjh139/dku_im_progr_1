@@ -10,6 +10,15 @@
 #include <pthread.h>
 #include <netdb.h>
 
+
+#define NI_DGRAM 16 /* Look up UDP service rather than TCP. */
+#define NI_NAMEREQD 8 /* Don't return numeric addresses. */
+#define NI_NOFQDN 4 /* Only return nodename portion. */
+#define NI_NUMERICHOST 1 /* Don't try to look up hostname. */
+#define NI_NUMERICSERV 2 /* Don't convert port number to name. */
+#define NI_MAXHOST 25
+#define NI_MAXSERV 3
+
 char buffer[1024];
 pthread_t tids[100];
 int thds;
@@ -32,7 +41,7 @@ int main(int argc, char *argv[])
 
 	// socket creation
 	srv_sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (srv_sock == -1) {
+	if (srv_sock == -1) { // socket CREATE error
 		perror("Server socket CREATE fail!!");
 		return 0;
 	}
@@ -45,32 +54,33 @@ int main(int argc, char *argv[])
 	
 	ret = bind (srv_sock, (struct sockaddr *)&addr, sizeof(addr));
 	
-	if (ret == -1) {
+	if (ret == -1) { //BIND error
 		perror("BIND error!!");
 		close(srv_sock);
 		return 0;
 	}
 
-	for (;;) {
-	// Listen part
-	ret = listen(srv_sock, 0);
+	while (1) { // Listen part
+		ret = listen(srv_sock, 0);
 
-	if (ret == -1) {
-		perror("LISTEN stanby mode fail");
-		close(srv_sock);
-		return 0;
-	}
+		if (ret == -1) { //LISTEN stanby error
+			perror("LISTEN stanby mode fail");
+			close(srv_sock);
+			return 0;
+		}
 
-	// Accept part ( create new client socket for communicate to client ! )
-	cli_sock = accept(srv_sock, (struct sockaddr *)NULL, NULL); // client socket
-	if (cli_sock == -1) {
-		perror("cli_sock connect ACCEPT fail");
-		close(srv_sock);
-	}
-	thds++;
-	// cli handler
-	pthread_create(&tids[thds], NULL, handle, &cli_sock);
-	} // end for
+		// Accept part ( create new client socket for communicate to client ! )
+		cli_sock = accept(srv_sock, (struct sockaddr *)NULL, NULL); // client socket
+		if (cli_sock == -1) { //cli_sock connect error
+			perror("cli_sock connect ACCEPT fail");
+			close(srv_sock);
+		}
+
+		// cli handler
+		thds++;
+		pthread_create(&tids[thds], NULL, handle, &cli_sock);
+		
+	} // ctrl+c to end
 	return 0;
 }
 
@@ -88,35 +98,39 @@ static void * handle(void * arg)
 	memset(&peer_addr, 0, sizeof(peer_addr));
 	peer_addr_len = sizeof(peer_addr);
 	ret = getpeername(cli_sockfd, &peer_addr, &peer_addr_len);
-	ret = getnameinfo(&peer_addr, peer_addr_len, 
-		hbuf, sizeof(hbuf), sbuf, sizeof(sbuf), 
+	ret = getnameinfo(
+		&peer_addr, peer_addr_len, 
+		hbuf, sizeof(hbuf),
+		sbuf, sizeof(sbuf), 
 		NI_NUMERICHOST | NI_NUMERICSERV); 
 
 	if (ret != 0) {
 		ret = -1;
 		pthread_exit(&ret);
 	}
+
 	/* read from client host:port */
-
 	while (1) {
-	int len = 0;
+		int len = 0;
 
-	printf("from client ----\n");
-	memset(recv_buffer, 0, sizeof(recv_buffer));
-	len = recv(cli_sockfd, recv_buffer, sizeof(recv_buffer), 0);
-	if (len == 0) continue;
-	printf("%s\n len:%d\n", recv_buffer, len);
-	memset(send_buffer, 0, sizeof(send_buffer));
-	sprintf(send_buffer, "[%s:%s]%s len:%d\n", 
-				hbuf, sbuf, recv_buffer, len);
-	len = strlen(send_buffer);
+		printf("from client ----\n");
+		memset(recv_buffer, 0, sizeof(recv_buffer));
+		len = recv(cli_sockfd, recv_buffer, sizeof(recv_buffer), 0);
+		if (len == 0)
+			continue;
+		printf("%s\n len:%d\n", recv_buffer, len);
+		memset(send_buffer, 0, sizeof(send_buffer));
+		sprintf(send_buffer, "[%s:%s]%s len:%d\n", 
+					hbuf, sbuf, recv_buffer, len);
+		len = strlen(send_buffer);
 
-	ret = send(cli_sockfd, send_buffer, len, 0);
-	if (ret == -1) break;
-	printf("----\n");
-	fflush(NULL);
-
+		ret = send(cli_sockfd, send_buffer, len, 0);
+		if (ret == -1)
+			break;
+		printf("----\n");
+		fflush(NULL);
 	}
+
 	close(cli_sockfd);
 	ret = 0;
 	pthread_exit(&ret);

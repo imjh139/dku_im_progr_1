@@ -9,7 +9,7 @@
 #include <arpa/inet.h>
 
 char *buffer;
-char r_buffer[1024];
+char read_buffer[1024];
 
 int main(int argc, char *argv[])
 {
@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
 	// addr binding, and connect
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons (port_num);
+	addr.sin_port = htons (port_num); // using port num
 	inet_pton(AF_INET, argv[1], &addr.sin_addr);
 
 	ret = connect(fd_sock, (struct sockaddr *)&addr, sizeof(addr));
@@ -49,6 +49,8 @@ int main(int argc, char *argv[])
 	while (1) {
 		buffer = NULL;
 		printf("send$ ");
+
+		// read user imput into the buffer
 		ret = getline(&buffer, &getline_len, stdin);
 		if (ret == -1) { // EOF
 			perror("getline");
@@ -60,15 +62,20 @@ int main(int argc, char *argv[])
 			free(buffer);
 			continue;
 		}
+
+		// send the buffer
 		send(fd_sock, buffer, len, 0);
 		free(buffer);
 
-		memset(r_buffer, 0, sizeof(r_buffer));
-		len = recv(fd_sock, r_buffer, sizeof(r_buffer), 0);
-		if (len < 0) break;
-		printf("server says $ %s\n", r_buffer);
+		// read echo
+		memset(read_buffer, 0, sizeof(read_buffer));
+		len = recv(fd_sock, read_buffer, sizeof(read_buffer), 0);
+		if (len < 0)
+			break;
+		printf("server says $ %s\n", read_buffer);
 		fflush(NULL);
 	}
+
 	// bye-bye
 	close(fd_sock);
 	return 0;
