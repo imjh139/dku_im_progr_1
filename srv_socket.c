@@ -127,7 +127,7 @@ static void * handle(void * arg)
 			break; //TODO: implement somethign to exit_pthread when client exits
 			continue;
 		}
-		printf("%s sent:\n %s\n len:%d\n", recv_buffer, len);
+		printf("%s sent:\n %s\n len:%d\n", hbuf, recv_buffer, len);
 		memset(send_buffer, 0, sizeof(send_buffer));
 		sprintf(send_buffer, "[%s:%s]%s len:%d", 
 					hbuf, sbuf, recv_buffer, len);
