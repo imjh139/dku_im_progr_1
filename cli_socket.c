@@ -57,11 +57,13 @@ int main(int argc, char *argv[])
 			break;
 		}
 		len = strlen(buffer);
+		if(buffer[len-1] = '\n')
+			len--;
 		if (len == 0) {
 			free(buffer);
 			continue;
 		}
-
+		
 		// send the buffer
 		send(fd_sock, buffer, len, 0);
 		free(buffer);
