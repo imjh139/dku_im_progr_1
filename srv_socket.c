@@ -124,7 +124,7 @@ static void * handle(void * arg)
 
 		len = recv(cli_sockfd, recv_buffer, sizeof(recv_buffer), 0);
 		if (len == 0){
-			//break; //TODO: implement somethign to exit_pthread when client exits
+			break; //TODO: implement somethign to exit_pthread when client exits
 			continue;
 		}
 		printf("%s sent:\n %s\n len:%d\n", recv_buffer, len);
