@@ -15,8 +15,8 @@
 #define NI_NOFQDN 4 /* Only return nodename portion. */
 #define NI_NUMERICHOST 1 /* Don't try to look up hostname. */
 #define NI_NUMERICSERV 2 /* Don't convert port number to name. */
-#define MAXHOST 25
-#define MAXSERV 3
+//#define MAXHOST 25
+//#define MAXSERV 3
 
 char buffer[1024];
 pthread_t thds[100];
@@ -24,6 +24,7 @@ int thdc;
 // int pid; 	// I dont know what is this for
 
 //functions declaration
+int pid; //TODO: maybe useless
 static void * handle(void *);
 
 //main
@@ -91,10 +92,10 @@ static void * handle(void * arg)
 {
 	int cli_sockfd = *(int *)arg;
 
-	int ret = 0; //-1;
+	int ret = -1;
 	char *recv_buffer = (char *)malloc(1024);
 	char *send_buffer = (char *)malloc(1024);
-	char host_buf[MAXHOST], serv_buf[MAXSERV];
+	char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
            
 	/* get peer addr */
 	struct sockaddr peer_addr;
@@ -104,10 +105,9 @@ static void * handle(void * arg)
 	
 	ret = getpeername(cli_sockfd, &peer_addr, &peer_addr_len);
 	ret = getnameinfo(
-		&peer_addr,
-		peer_addr_len, 
-		host_buf, sizeof(host_buf),
-		serv_buf, sizeof(serv_buf), 
+		&peer_addr, peer_addr_len, 
+		hbuf, sizeof(hbuf),
+		sbuf, sizeof(sbuf), 
 		NI_NUMERICHOST | NI_NUMERICSERV); 
 
 	if (ret != 0) {
@@ -115,7 +115,7 @@ static void * handle(void * arg)
 		pthread_exit(&ret);
 	}
 
-	printf("%s conected\n", host_buf);
+	// printf("%s conected\n", host_buf); //TODO:add back
 	/* read from client host:port */
 	while (1) {
 		int len = 0;
@@ -128,7 +128,7 @@ static void * handle(void * arg)
 		printf("%s\n len:%d\n", recv_buffer, len);
 		memset(send_buffer, 0, sizeof(send_buffer));
 		sprintf(send_buffer, "[%s:%s]%s len:%d\n", 
-					host_buf, serv_buf, recv_buffer, len);
+					hbuf, sbuf, recv_buffer, len);
 		len = strlen(send_buffer);
 
 		ret = send(cli_sockfd, send_buffer, len, 0);

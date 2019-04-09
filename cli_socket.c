@@ -57,11 +57,13 @@ int main(int argc, char *argv[])
 			break;
 		}
 		len = strlen(buffer);
+		/*
 		if(buffer[len-1] == '\n'){
 			printf("cuting off '\\n'");
 			buffer[len-1] = '\0';
 			len--;
 		}
+		*/
 		if (len == 0) {
 			free(buffer);
 			continue;
