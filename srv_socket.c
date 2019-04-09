@@ -1,13 +1,13 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <unistd.h>
-#include <string.h>
-#include <signal.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <sys/types.h>
 #include <pthread.h>
+#include <string.h>
+#include <unistd.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <stdio.h>
 #include <netdb.h>
 
 #define NI_DGRAM 16 /* Look up UDP service rather than TCP. */
@@ -124,8 +124,8 @@ static void * handle(void * arg)
 
 		len = recv(cli_sockfd, recv_buffer, sizeof(recv_buffer), 0);
 		if (len == 0){
-			break; //TODO: implement somethign to exit_pthread when client exits
-			continue;
+			printf("%s disconected\n", hbuf);
+			break; //recv() definitely returns = 0 when the other side closed the connection
 		}
 		printf("%s sent:\n %s\n len:%d\n", hbuf, recv_buffer, len);
 		memset(send_buffer, 0, sizeof(send_buffer));
