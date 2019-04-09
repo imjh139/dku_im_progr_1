@@ -14,9 +14,8 @@ char read_buffer[1024];
 int main(int argc, char *argv[])
 {
 	int fd_sock, cli_sock;
-	int port_num, ret;
+	int port_num, ret, len;
 	struct sockaddr_in addr;
-	int len;
 	size_t getline_len;
 
 	// arg parsing
@@ -36,7 +35,7 @@ int main(int argc, char *argv[])
 	// addr binding, and connect
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons (port_num); // using port num
+	addr.sin_port = htons(port_num); // using port num
 	inet_pton(AF_INET, argv[1], &addr.sin_addr);
 
 	ret = connect(fd_sock, (struct sockaddr *)&addr, sizeof(addr));
