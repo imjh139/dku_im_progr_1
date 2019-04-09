@@ -120,15 +120,16 @@ static void * handle(void * arg)
 	/* read from client host:port */
 	while (1) {
 		int len = 0;
-
-		printf("recibing from client:\n");
 		memset(recv_buffer, 0, sizeof(recv_buffer));
+
 		len = recv(cli_sockfd, recv_buffer, sizeof(recv_buffer), 0);
-		if (len == 0)
+		if (len == 0){
+			//break; //TODO: implement somethign to exit_pthread when client exits
 			continue;
-		printf("%s\n len:%d\n", recv_buffer, len);
+		}
+		printf("%s sent:\n %s\n len:%d\n", recv_buffer, len);
 		memset(send_buffer, 0, sizeof(send_buffer));
-		sprintf(send_buffer, "[%s:%s]%s len:%d\n", 
+		sprintf(send_buffer, "[%s:%s]%s len:%d", 
 					hbuf, sbuf, recv_buffer, len);
 		len = strlen(send_buffer);
 
