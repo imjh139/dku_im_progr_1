@@ -115,7 +115,8 @@ static void * handle(void * arg)
 		pthread_exit(&ret);
 	}
 
-	// printf("%s conected\n", host_buf); //TODO:add back
+	printf("%s conected.\n", hbuf); //TODO:add back
+
 	/* read from client host:port */
 	while (1) {
 		int len = 0;

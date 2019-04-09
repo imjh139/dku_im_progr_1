@@ -57,13 +57,11 @@ int main(int argc, char *argv[])
 			break;
 		}
 		len = strlen(buffer);
-		/*
-		if(buffer[len-1] == '\n'){
-			printf("cuting off '\\n'");
+		if(buffer[len-1] == '\n')
+		{
 			buffer[len-1] = '\0';
 			len--;
 		}
-		*/
 		if (len == 0) {
 			free(buffer);
 			continue;
@@ -78,7 +76,7 @@ int main(int argc, char *argv[])
 		len = recv(fd_sock, read_buffer, sizeof(read_buffer), 0);
 		if (len < 0)
 			break;
-		printf("server says $ %s\n", read_buffer);
+		printf("server responded: %s\n", read_buffer);
 		fflush(NULL);
 	}
 

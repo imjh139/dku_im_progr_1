@@ -1,4 +1,4 @@
 compile server:
 gcc srv_socket.c -o srv -pthread
 
-use port 63000
+pc1-pc5 : 220.149.244.211-215 :63000
