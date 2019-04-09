@@ -72,8 +72,7 @@ int main(int argc, char *argv[])
 		}
 
 		// Accept a client ( get new socket to communicate)
-		cli_sock = accept( srv_sock, /*(struct sockaddr *)*/NULL, NULL);
-		printf("accepted\n");
+		cli_sock = accept( srv_sock, NULL, NULL);
 		if (cli_sock == -1) { //cli_sock connect error
 			perror("cli_sock connect ACCEPT fail");
 			close(srv_sock);
@@ -83,6 +82,7 @@ int main(int argc, char *argv[])
 		thdc++;
 		pthread_create(&thds[thdc], NULL, handle, &cli_sock);
 		
+		//it will go back to listenig state
 	} // ctrl+c to end
 	return 0;
 }
@@ -90,22 +90,24 @@ int main(int argc, char *argv[])
 static void * handle(void * arg)
 {
 	int cli_sockfd = *(int *)arg;
+
 	int ret = 0; //-1;
 	char *recv_buffer = (char *)malloc(1024);
 	char *send_buffer = (char *)malloc(1024);
-	char hbuf[MAXHOST], sbuf[MAXSERV];
+	char host_buf[MAXHOST], serv_buf[MAXSERV];
            
 	/* get peer addr */
 	struct sockaddr peer_addr;
 	socklen_t peer_addr_len;
 	memset(&peer_addr, 0, sizeof(peer_addr));
 	peer_addr_len = sizeof(peer_addr);
+	
 	ret = getpeername(cli_sockfd, &peer_addr, &peer_addr_len);
 	ret = getnameinfo(
 		&peer_addr,
 		peer_addr_len, 
-		hbuf, sizeof(hbuf),
-		sbuf, sizeof(sbuf), 
+		host_buf, sizeof(host_buf),
+		serv_buf, sizeof(serv_buf), 
 		NI_NUMERICHOST | NI_NUMERICSERV); 
 
 	if (ret != 0) {
@@ -113,6 +115,7 @@ static void * handle(void * arg)
 		pthread_exit(&ret);
 	}
 
+	printf("%s conected\n", host_buf);
 	/* read from client host:port */
 	while (1) {
 		int len = 0;
@@ -125,7 +128,7 @@ static void * handle(void * arg)
 		printf("%s\n len:%d\n", recv_buffer, len);
 		memset(send_buffer, 0, sizeof(send_buffer));
 		sprintf(send_buffer, "[%s:%s]%s len:%d\n", 
-					hbuf, sbuf, recv_buffer, len);
+					host_buf, serv_buf, recv_buffer, len);
 		len = strlen(send_buffer);
 
 		ret = send(cli_sockfd, send_buffer, len, 0);
