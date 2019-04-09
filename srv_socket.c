@@ -10,7 +10,6 @@
 #include <pthread.h>
 #include <netdb.h>
 
-
 #define NI_DGRAM 16 /* Look up UDP service rather than TCP. */
 #define NI_NAMEREQD 8 /* Don't return numeric addresses. */
 #define NI_NOFQDN 4 /* Only return nodename portion. */
@@ -20,11 +19,14 @@
 //#define NI_MAXSERV 3
 
 char buffer[1024];
-pthread_t tids[100];
-int thds;
+pthread_t thds[100];
+int thdc;
+// int pid; 	// I dont know what is this for
 
-int pid;
+//functions declaration
 static void * handle(void *);
+
+//main
 int main(int argc, char *argv[])
 {
 	int srv_sock, cli_sock;
@@ -59,6 +61,8 @@ int main(int argc, char *argv[])
 		close(srv_sock);
 		return 0;
 	}
+	
+	printf("listening ...\n");
 
 	while (1) { // Listen part
 		ret = listen(srv_sock, 0);
@@ -70,15 +74,20 @@ int main(int argc, char *argv[])
 		}
 
 		// Accept part ( create new client socket for communicate to client ! )
-		cli_sock = accept(srv_sock, (struct sockaddr *)NULL, NULL); // client socket
+		printf("accepting\n");
+		cli_sock = accept(
+			srv_sock,
+			/*(struct sockaddr *)*/NULL,
+			NULL); // client socket
+		printf("accepted\n");
 		if (cli_sock == -1) { //cli_sock connect error
 			perror("cli_sock connect ACCEPT fail");
 			close(srv_sock);
 		}
 
 		// cli handler
-		thds++;
-		pthread_create(&tids[thds], NULL, handle, &cli_sock);
+		thdc++;
+		pthread_create(&thds[thdc], NULL, handle, &cli_sock);
 		
 	} // ctrl+c to end
 	return 0;
