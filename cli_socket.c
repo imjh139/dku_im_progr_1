@@ -32,14 +32,14 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	// addr binding, and connect
+	// addr binding
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port_num); // using port num
 	inet_pton(AF_INET, argv[1], &addr.sin_addr);
-
+	//, and connect
 	ret = connect(fd_sock, (struct sockaddr *)&addr, sizeof(addr));
-	if (ret == -1) {
+	if (ret == -1) { //connection error
 		perror("connect");
 		close(fd_sock);
 		return 0;
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
 			break;
 		}
 		len = strlen(buffer);
-		if(buffer[len-1] == '\n')
+		if(buffer[len-1] == '\n')  //remove '\n' at the end
 		{
 			buffer[len-1] = '\0';
 			len--;
