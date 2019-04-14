@@ -79,7 +79,6 @@ int main(int argc, char const *argv[])
         free(temp);
         lineCount++;
     }
- 
 
     fclose(master);
     fclose(output);
