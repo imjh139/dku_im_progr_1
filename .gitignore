@@ -1,6 +1,7 @@
 .vscode
 *.out
 *.exe
+input.txt
 cli
 srv
 m2s
