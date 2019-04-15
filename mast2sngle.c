@@ -33,7 +33,7 @@ int main(int argc, char const *argv[])
     master = my_fopen(filename, "r");
     output = my_fopen("input.txt", "w"); //called "input" because is from client perspective
 
-    fprintf (output, "%s", filename);
+    fprintf (output, "%s", argv[2]);
     while ((ret = getline(&line, &len, master)) != -1)
     {
         //trim unecesary characters at the end
