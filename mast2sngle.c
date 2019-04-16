@@ -29,7 +29,6 @@ int main(int argc, char const *argv[])
     int ret = 0, lineCount = 1;
 
     //opening input and output files
-    //printf("reading: %s\n", filename); //control
     master = my_fopen(filename, "r");
     output = my_fopen("input.txt", "w"); //called "input" because is from client perspective
 
