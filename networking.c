@@ -10,22 +10,26 @@
 #include <errno.h>
 #include <stdio.h>
 #include <netdb.h>
-#include <network_table.h> //defines structure for each row of the table
+#include "network_table.h" //defines structure for each row of the table
 
 // my define's
 #define MAX_NEIGHBORS 4 //relatively small numer. like smaer than 7
 #define NODES_IN_TOPOLOGIE 5 //can be really big number
 
 // global varibles
-//int itself = 1;
 int neighbor_count = 0;  //only modified by init
 int entries = 0;  //only modified by init
+int myIP = 0;  //only modified by init
 struct rute ruteTbl[NODES_IN_TOPOLOGIE];
 
 //functions declaration
 void init();
-FILE *my_fopen(const char *__restrict __filename, const char *__restrict __modes);
+void server();
+void client();
+void read_commands();
+int fix_hexa(unsigned int readed);
 void trim_null_char(int length, char *line);
+FILE *my_fopen(const char *__restrict __filename, const char *__restrict __modes);
 
 //main
 int main(int argc, char *argv[])
@@ -33,22 +37,48 @@ int main(int argc, char *argv[])
     //read input file
     init();
 
-	pthread_create( /* content */); //TODO: server  //tread to listen
+	//pthread_create( /* content */, servee); //TODO: server  //tread to listen
 
 	if (neighbor_count > 1)
-		forech(rute in ruteTbl) 
-			pthread_create( /* content */); //TODO: client  //  conect to server  //  if table is updated: share the changes
-
+	{
+		printf ("myIP: %#X\n", myIP); //control
+		for(int i=0; i<neighbor_count; i++)
+		{
+			printf(
+				"%d: %#X %#X %d\n",
+				i,
+				ruteTbl[i].ip_addrs,
+				ruteTbl[i].nxt_jump,
+				ruteTbl[i].rute_cost
+				);
+			//pthread_create( /* content */); //TODO: client  //  conect to server  //  if table is updated: share the changes
+		}
+	}
 	read_commands(); //TODO: terminal    // console-like to input commands: "show_table" "exit" "snd_msg" "help" "change_link_cost"
 	
 	return 0;
 }
 
+void server()
+{
+	printf ("this is server\n"); //control
 
-void server(){
 	//when x receives new DV estimate from neighbor, it updates its own DV using B-F equation:
 	//Dx(y) ← minv{c(x,v) + Dv(y)}  for each node y ∊ N
 }
+
+void client(){
+	printf ("this is client\n"); //control
+
+	//when x receives new DV estimate from neighbor, it updates its own DV using B-F equation:
+	//Dx(y) ← minv{c(x,v) + Dv(y)}  for each node y ∊ N
+}
+
+void read_commands(){
+	
+}
+
+
 
 void init()
 {
@@ -58,13 +88,19 @@ void init()
 	int ret;
     size_t len = 0;
 	char *token;
+	int ipadres = -1;
+
+	memset(ruteTbl, 0, sizeof(ruteTbl));
 
 	//open file input
 	temp = my_fopen("input.txt", "r"); 
 
 	// my ip adress
 	ret = getline(&line, &len, temp); // first line //TODO: free line after getline?
-	printf ("myIP: %s", line); //TODO:
+	//printf ("myIP: %s", line); //control
+    trim_null_char(ret, line);
+	inet_pton(AF_INET, line, &myIP);
+	myIP = fix_hexa(myIP);
 
 	// for each line(neigbord):
 	while ((ret = getline(&line, &len, temp)) != -1)
@@ -79,20 +115,33 @@ void init()
 
 		// neighbor IP-adrss
         token = strtok(line, delim);
-			printf ("%s ~ ", token); //control
-			int ipadres = foo(token); //TODO: change foo() for a function that works
-			table[neighbor_count].ip_addrs = ipadres;
-			table[neighbor_count].nxt_jump = ipadres;
+			//printf ("%s ~ ", token); //control
+			inet_pton(AF_INET, token, &ipadres);
+			ipadres = fix_hexa(ipadres);
+			ruteTbl[neighbor_count].ip_addrs = ipadres;
+			ruteTbl[neighbor_count].nxt_jump = ipadres;
 
 		// 2nd token // cost
 		token = strtok(NULL, delim);
-			printf ("%s\n", token); //control
-			table[neighbor_count].rute_cost = strtoi(token); //TODO: change strtoi() for a string-to-int()
+			//printf ("%s\n", token); //control
+			ruteTbl[neighbor_count].rute_cost = atoi(token);
 
 		neighbor_count++;
 	}
 
     fclose(temp);
+}
+
+int fix_hexa(unsigned int readed)
+{
+    unsigned int temp = 0;
+
+    temp += (readed & 0xff) << 24;
+    temp += (readed & 0xff00) << 8;
+    temp += (readed & 0xff0000) >> 8;
+    temp += (readed & 0xff000000) >> 24;
+
+    return temp;
 }
 
 void trim_null_char(int length, char *line){
