@@ -10,20 +10,22 @@
 #include <errno.h>
 #include <stdio.h>
 #include <netdb.h>
+#include <network_table.h> //defines structure for each row of the table
 
-/* Don't try to look up hostname. */
-#define NI_NUMERICHOST 1
-/* Don't convert port number to name. */
-#define NI_NUMERICSERV 2
-#define MAX_NEIGHBORS 4
+// my define's
+#define MAX_NEIGHBORS 4 //relatively small numer. like smaer than 7
+#define NODES_IN_TOPOLOGIE 5 //can be really big number
 
 // global varibles
-const static char delim[2] = "~";
+//int itself = 1;
+int neighbor_count = 0;  //only modified by init
+int entries = 0;  //only modified by init
+struct rute ruteTbl[NODES_IN_TOPOLOGIE];
 
 //functions declaration
-static void * handle(void *);
 void init();
-
+FILE *my_fopen(const char *__restrict __filename, const char *__restrict __modes);
+void trim_null_char(int length, char *line);
 
 //main
 int main(int argc, char *argv[])
@@ -31,55 +33,89 @@ int main(int argc, char *argv[])
     //read input file
     init();
 
-	
+	pthread_create( /* content */); //TODO: server  //tread to listen
 
+	if (neighbor_count > 1)
+		forech(rute in ruteTbl) 
+			pthread_create( /* content */); //TODO: client  //  conect to server  //  if table is updated: share the changes
+
+	read_commands(); //TODO: terminal    // console-like to input commands: "show_table" "exit" "snd_msg" "help" "change_link_cost"
+	
 	return 0;
+}
+
+
+void server(){
+	//when x receives new DV estimate from neighbor, it updates its own DV using B-F equation:
+	//Dx(y) ← minv{c(x,v) + Dv(y)}  for each node y ∊ N
 }
 
 void init()
 {
-	//open file input
-    FILE *temp = fopen("input.txt", "r"); 
-    if (temp == NULL) // error opening the file
-    {
-        perror("input file");
-    	fclose(temp);
-        exit(EXIT_FAILURE);
-    }
-	
+	const static char delim[2] = "~";
+	FILE *temp;
     char *line = NULL;
+	int ret;
     size_t len = 0;
+	char *token;
+
+	//open file input
+	temp = my_fopen("input.txt", "r"); 
 
 	// my ip adress
-	int ret = getline(&line, &len, temp); // first line
+	ret = getline(&line, &len, temp); // first line //TODO: free line after getline?
 	printf ("myIP: %s", line); //TODO:
 
-	char lineCount = 0;
-	while ((ret = getline(&line, &len, temp)) != -1) // for each neigbord
+	// for each line(neigbord):
+	while ((ret = getline(&line, &len, temp)) != -1)
 	{
-		//trim unecesary characters at the end
-        ret--;
-        while (ret >= 0)
-        {
-            if (line[ret] > ' ')
-                break;
-            line[ret] = '\0';
-            ret--;
-        }
-
-		char *token;
-
-        //try with first token
-        token = strtok(line, delim); // 1st token  // (direct)neighbor
-		printf ("%s ~ ", token); //TODO:
-		token = strtok(NULL, delim); // 2nd token // cost
-		printf ("%s\n", token); //TODO:
-
-        if (++lineCount > MAX_NEIGHBORS){
-			printf ("ERROR reading input: maximum number of neighbors reaached");
-        	exit(EXIT_FAILURE);
+		if (neighbor_count >= MAX_NEIGHBORS){
+			printf ("ERROR: maximum number of neighbors reaached");
+			exit(EXIT_FAILURE);
 		}
+
+		//trim unecesary characters at the end
+        trim_null_char(ret, line);
+
+		// neighbor IP-adrss
+        token = strtok(line, delim);
+			printf ("%s ~ ", token); //control
+			int ipadres = foo(token); //TODO: change foo() for a function that works
+			table[neighbor_count].ip_addrs = ipadres;
+			table[neighbor_count].nxt_jump = ipadres;
+
+		// 2nd token // cost
+		token = strtok(NULL, delim);
+			printf ("%s\n", token); //control
+			table[neighbor_count].rute_cost = strtoi(token); //TODO: change strtoi() for a string-to-int()
+
+		neighbor_count++;
 	}
 
     fclose(temp);
+}
+
+void trim_null_char(int length, char *line){
+	length--;
+
+	while (length >= 0)
+	{
+		if (line[length] > ' ')
+			break;
+		line[length] = '\0';
+		length--;
+	}
+}
+
+FILE *my_fopen(const char *__restrict __filename, const char *__restrict __modes)
+{
+    FILE *temp = fopen(__filename, __modes);
+
+    if (temp == NULL) // error opening the file
+    {
+        perror(__filename);
+        exit(EXIT_FAILURE);
+    }
+
+    return temp;
 }
