@@ -13,7 +13,7 @@ char read_buffer[1024];
 
 int main(int argc, char *argv[])
 {
-	int fd_sock, cli_sock;
+	int fd_sock;
 	int port_num, ret, len;
 	struct sockaddr_in addr;
 	size_t getline_len;
@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 
 	// socket creation
 	fd_sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (fd_sock == -1) {
+	if (fd_sock == -1) { // socket CREATE error
 		perror("socket");
 		return 0;
 	}
@@ -35,17 +35,19 @@ int main(int argc, char *argv[])
 	// addr binding
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
-	addr.sin_port = htons(port_num); // using port num
-	inet_pton(AF_INET, argv[1], &addr.sin_addr);
-	//, and connect
-	ret = connect(fd_sock, (struct sockaddr *)&addr, sizeof(addr));
+	addr.sin_port = htons(port_num); // using port num (argv)
+	inet_pton(AF_INET, argv[1], &addr.sin_addr); // using IPadrss (argv)
+	
+	//connect
+	ret = connect(fd_sock, (struct sockaddr *)&addr, sizeof(addr));  //expecting an accept()
 	if (ret == -1) { //connection error
 		perror("connect");
 		close(fd_sock);
 		return 0;
 	}
 
-	while (1) {
+	while (1) // { getline() -> send() -> recv() }
+	{
 		buffer = NULL;
 		printf("send$ ");
 

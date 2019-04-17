@@ -52,8 +52,8 @@ int main(int argc, char *argv[])
 	// addr binding
 	memset(&addr, 0, sizeof(addr));
 	addr.sin_family = AF_INET;
+	addr.sin_port = htons(port_num); // using port num   argv
 	addr.sin_addr.s_addr = htons(INADDR_ANY); //listen to all ports // 32bit IPV4 addr that not use static IP addr
-	addr.sin_port = htons(port_num); // using port num
 	
 	ret = bind (srv_sock, (struct sockaddr *)&addr, sizeof(addr));
 	if (ret == -1) { //BIND error
@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 	printf("listening ...\n");
 	while (1) { // Listen part
 
-		ret = listen(srv_sock, 0);
+		ret = listen(srv_sock, 0); //TODO: see if backlog==0 is infinite
 		if (ret == -1) { //LISTEN stanby error
 			perror("LISTEN stanby mode fail");
 			close(srv_sock);
