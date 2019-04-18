@@ -15,8 +15,10 @@
 // my define's
 #define MAX_NEIGHBORS 4 //relatively small numer. like smaer than 7
 #define NODES_IN_TOPOLOGIE 5 //can be really big number
+#define PORT 63000
 
 // global varibles
+pthread_t thds[MAX_NEIGHBORS+1];
 int neighbor_count = 0;  //only modified by init
 int entries = 0;  //only modified by init
 int myIP = 0;  //only modified by init
@@ -24,46 +26,53 @@ struct rute ruteTbl[NODES_IN_TOPOLOGIE];
 
 //main functions declaration
 void init();
-void server();
-void client();
+static void * server();
+static void * client();
 void read_commands();
 //helper functions declaration
 void print_head();
-void print_table();
+void print_table(int limit);
 int fix_hexa(unsigned int readed);
 void trim_null_char(int length, char *line);
 FILE *my_fopen(const char *__restrict __filename, const char *__restrict __modes);
 
 //main
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
     //read input file
     init();
 
-	//pthread_create( /* content */, servee); //TODO: server  //tread to listen
+	pthread_create(&thds[0], NULL, server, &myIP);
 
 	if (neighbor_count > 1)
 	{
 		for(int i=0; i<neighbor_count; i++)
-		{
-			//pthread_create( /* content */); //TODO: client  //  conect to server  //  if table is updated: share the changes
-		}
+			pthread_create(&thds[i+1], NULL, client, &ruteTbl[i].ip_addrs);
 	}
-	read_commands(); //TODO: terminal    // console-like to input commands: "show_table" "exit" "snd_msg" "help" "change_link_cost"
+	read_commands(); // console-like to input commands
 	
 	return 0;
 }
 
-void server()
-{
-	printf ("this is server\n"); //control
+static void * server(void * ipadrss){
+	
+	char *temp_ip_addrs = malloc(INET_ADDRSTRLEN);
+
+	inet_ntop(AF_INET, ipadrss, temp_ip_addrs, INET_ADDRSTRLEN);
+
+	printf ("this is server for: %s\n", temp_ip_addrs); //control
 
 	//when x receives new DV estimate from neighbor, it updates its own DV using B-F equation:
 	//Dx(y) ← minv{c(x,v) + Dv(y)}  for each node y ∊ N
 }
 
-void client(){
-	printf ("this is client\n"); //control
+static void * client(void * ipadrss){
+	char *temp_ip_addrs = malloc(INET_ADDRSTRLEN);
+
+	inet_ntop(AF_INET, ipadrss, temp_ip_addrs, INET_ADDRSTRLEN);
+
+	printf ("this is client for: %s\n", temp_ip_addrs); //control
+
+	free(temp_ip_addrs);
 
 	//when x receives new DV estimate from neighbor, it updates its own DV using B-F equation:
 	//Dx(y) ← minv{c(x,v) + Dv(y)}  for each node y ∊ N
@@ -97,7 +106,16 @@ void read_commands(){
 			break;
 			//printf("exiting\n"); //control
 		else if( strcmp(buffer, "table")==0)
-			print_table();
+			print_table(entries);
+		else if( strcmp(buffer, "msg")==0){
+			//TODO:
+		}
+		else if( strcmp(buffer, "change")==0){
+			//TODO:
+		}
+		else if( strcmp(buffer, "help")==0){
+			//TODO:
+		}
 
 		free(buffer);
 	}
@@ -105,31 +123,40 @@ void read_commands(){
 	exit(EXIT_SUCCESS);
 }
 
-void print_table(){
-	printf ("  myIP: %#X\n", myIP); //control
-	for(int i=0; i<neighbor_count; i++)
+void print_table(int limit){
+    char *temp_ip_addrs = malloc(INET_ADDRSTRLEN);
+    char *temp_nxt_jump = malloc(INET_ADDRSTRLEN);
+
+	inet_ntop(AF_INET, &myIP, temp_ip_addrs, INET_ADDRSTRLEN);
+	printf ("  myIP: %s\n", temp_ip_addrs);
+	for(int i=0; i<limit; i++)
 	{
+	   inet_ntop(AF_INET, &ruteTbl[i].ip_addrs, temp_ip_addrs, INET_ADDRSTRLEN);
+	   inet_ntop(AF_INET, &ruteTbl[i].nxt_jump, temp_nxt_jump, INET_ADDRSTRLEN);
+
 		printf(
-			"  %d: %#X %#X %d\n",
+			"  %d: %s %s %d\n",
 			i,
-			ruteTbl[i].ip_addrs,
-			ruteTbl[i].nxt_jump,
+			temp_ip_addrs,
+			temp_nxt_jump,
 			ruteTbl[i].rute_cost
 			);
 	}
+
+	free(temp_ip_addrs);
+	free(temp_nxt_jump);
 }
 
 void print_head(){
 	printf("enter your commands:\n");
 }
 
-void init()
-{
+void init(){
 	const static char delim[2] = "~";
 	FILE *temp;
-    char *line = NULL;
+    size_t len = 40;
+    char *line = malloc(len);
 	int ret;
-    size_t len = 0;
 	char *token;
 	int ipadres = -1;
 
@@ -139,11 +166,9 @@ void init()
 	temp = my_fopen("input.txt", "r"); 
 
 	// my ip adress
-	ret = getline(&line, &len, temp); // first line //TODO: free line after getline?
-	//printf ("myIP: %s", line); //control
+	ret = getline(&line, &len, temp); // first line
     trim_null_char(ret, line);
 	inet_pton(AF_INET, line, &myIP);
-	myIP = fix_hexa(myIP);
 
 	// for each line(neigbord):
 	while ((ret = getline(&line, &len, temp)) != -1)
@@ -160,7 +185,6 @@ void init()
         token = strtok(line, delim);
 			//printf ("%s ~ ", token); //control
 			inet_pton(AF_INET, token, &ipadres);
-			ipadres = fix_hexa(ipadres);
 			ruteTbl[neighbor_count].ip_addrs = ipadres;
 			ruteTbl[neighbor_count].nxt_jump = ipadres;
 
@@ -170,21 +194,11 @@ void init()
 			ruteTbl[neighbor_count].rute_cost = atoi(token);
 
 		neighbor_count++;
+		entries++;
 	}
 
+	free(line);
     fclose(temp);
-}
-
-int fix_hexa(unsigned int readed)
-{
-    unsigned int temp = 0;
-
-    temp += (readed & 0xff) << 24;
-    temp += (readed & 0xff00) << 8;
-    temp += (readed & 0xff0000) >> 8;
-    temp += (readed & 0xff000000) >> 24;
-
-    return temp;
 }
 
 void trim_null_char(int length, char *line){
@@ -199,8 +213,7 @@ void trim_null_char(int length, char *line){
 	}
 }
 
-FILE *my_fopen(const char *__restrict __filename, const char *__restrict __modes)
-{
+FILE *my_fopen(const char *__restrict __filename, const char *__restrict __modes){
     FILE *temp = fopen(__filename, __modes);
 
     if (temp == NULL) // error opening the file
