@@ -22,11 +22,14 @@ int entries = 0;  //only modified by init
 int myIP = 0;  //only modified by init
 struct rute ruteTbl[NODES_IN_TOPOLOGIE];
 
-//functions declaration
+//main functions declaration
 void init();
 void server();
 void client();
 void read_commands();
+//helper functions declaration
+void print_head();
+void print_table();
 int fix_hexa(unsigned int readed);
 void trim_null_char(int length, char *line);
 FILE *my_fopen(const char *__restrict __filename, const char *__restrict __modes);
@@ -41,16 +44,8 @@ int main(int argc, char *argv[])
 
 	if (neighbor_count > 1)
 	{
-		printf ("myIP: %#X\n", myIP); //control
 		for(int i=0; i<neighbor_count; i++)
 		{
-			printf(
-				"%d: %#X %#X %d\n",
-				i,
-				ruteTbl[i].ip_addrs,
-				ruteTbl[i].nxt_jump,
-				ruteTbl[i].rute_cost
-				);
 			//pthread_create( /* content */); //TODO: client  //  conect to server  //  if table is updated: share the changes
 		}
 	}
@@ -75,10 +70,58 @@ void client(){
 }
 
 void read_commands(){
-	
+	char *buffer;
+	int ret, len;
+	size_t getline_len;
+
+	print_head();
+
+	while (1)
+	{
+		buffer = NULL;
+		printf("-$ ");
+
+		// read user imput into the buffer
+		ret = getline(&buffer, &getline_len, stdin);
+		if (ret == -1) { // EOF
+			perror("getline");
+			break;
+		}
+		len = strlen(buffer);
+		trim_null_char(ret, buffer);
+		//printf("input: '%s'\n", buffer); //control
+
+		if (len == 0)
+			continue;
+		else if( strcmp(buffer, "exit")==0)
+			break;
+			//printf("exiting\n"); //control
+		else if( strcmp(buffer, "table")==0)
+			print_table();
+
+		free(buffer);
+	}
+
+	exit(EXIT_SUCCESS);
 }
 
+void print_table(){
+	printf ("  myIP: %#X\n", myIP); //control
+	for(int i=0; i<neighbor_count; i++)
+	{
+		printf(
+			"  %d: %#X %#X %d\n",
+			i,
+			ruteTbl[i].ip_addrs,
+			ruteTbl[i].nxt_jump,
+			ruteTbl[i].rute_cost
+			);
+	}
+}
 
+void print_head(){
+	printf("enter your commands:\n");
+}
 
 void init()
 {
