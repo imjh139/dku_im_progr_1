@@ -48,6 +48,7 @@ int main(int argc, char *argv[]){
 		for(int i=0; i<neighbor_count; i++)
 			pthread_create(&thds[i+1], NULL, client, &ruteTbl[i].ip_addrs);
 	}
+
 	read_commands(); // console-like to input commands
 	
 	return 0;
@@ -56,6 +57,7 @@ int main(int argc, char *argv[]){
 static void * server(void * ipadrss){
 	
 	char *temp_ip_addrs = malloc(INET_ADDRSTRLEN);
+	char buffer[1024] = {0};
 
 	inet_ntop(AF_INET, ipadrss, temp_ip_addrs, INET_ADDRSTRLEN);
 
@@ -63,6 +65,27 @@ static void * server(void * ipadrss){
 
 	//when x receives new DV estimate from neighbor, it updates its own DV using B-F equation:
 	//Dx(y) ← minv{c(x,v) + Dv(y)}  for each node y ∊ N
+
+}
+
+//update input file function
+void inputFileUpdate() {
+	char *temp_ip_addrs = malloc(INET_ADDRSTRLEN);
+	inet_ntop(AF_INET, &myIP, temp_ip_addrs, INET_ADDRSTRLEN);
+	FILE *fp = fopen("input.txt", "w");
+	if (fp != NULL) {
+		fprintf(fp, "%s", temp_ip_addrs);
+		for (int i = 0; i <= neighbor_count; i++) {
+			inet_ntop(AF_INET, &ruteTbl[i].ip_addrs, temp_ip_addrs, INET_ADDRSTRLEN);
+			if (strcmp(temp_ip_addrs, "0.0.0.0")!=0) {
+				printf("Encoding Neighbour %s~%d\n", temp_ip_addrs, ruteTbl[i].rute_cost);
+				fprintf(fp, "\n");
+				fprintf(fp, "%s%c%d", temp_ip_addrs, '~', ruteTbl[i].rute_cost);
+			}
+		}
+	}
+	else printf("Error Neighbours File Not Found!");
+	fclose(fp);
 }
 
 static void * client(void * ipadrss){
@@ -72,10 +95,70 @@ static void * client(void * ipadrss){
 
 	printf ("this is client for: %s\n", temp_ip_addrs); //control
 
-	free(temp_ip_addrs);
 
 	//when x receives new DV estimate from neighbor, it updates its own DV using B-F equation:
 	//Dx(y) ← minv{c(x,v) + Dv(y)}  for each node y ∊ N
+
+	int fd_sock;
+	int port_num, ret, len;
+	struct sockaddr_in addr;
+	size_t getline_len;
+
+	port_num = PORT;
+
+	// socket creation
+	fd_sock = socket(AF_INET, SOCK_STREAM, 0);
+	if (fd_sock == -1) { // socket CREATE error
+		perror("socket");
+		return 0;
+	}
+
+	// addr
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(port_num); // using port num (argv)
+	int check = inet_pton(AF_INET, temp_ip_addrs, &addr.sin_addr); // using IPadrss (argv)
+	printf("check : %d\n", check);
+	if (check==0) {
+	 	printf("Can't Connect Address Might be Not reachable");
+	}
+	else {
+	//connect
+	ret = connect(fd_sock, (struct sockaddr *)&addr, sizeof(addr));  //expecting an accept()
+	if (ret == -1) { //connection error
+		printf ("Cant connect to %s:\n", temp_ip_addrs);
+		perror("connect");
+		close(fd_sock);
+		return 0;
+	}
+	printf("Connected\n");
+	
+	//update and send table file / input.txt
+	//add conditional if there is some signal changes
+	inputFileUpdate();
+	char sdbuf[512];
+		FILE *fs = fopen("input.txt", "r");
+		if(fs == NULL)
+		{
+			printf("ERROR: File not found.\n");
+		}
+		bzero(sdbuf, 512); 
+		int fs_block_sz;
+		while((fs_block_sz = fread(sdbuf, sizeof(char), 512, fs)) > 0)
+		{
+		    if(send(fd_sock, sdbuf, fs_block_sz, 0) < 0)
+		    {
+		    	printf("FAIL");
+		    	break;
+		    }
+		    bzero(sdbuf, 512);
+		}
+		printf("Ok table info from Client was Sent!\n");
+	}
+	getchar();
+
+	free(temp_ip_addrs);
+	
 }
 
 void read_commands(){
