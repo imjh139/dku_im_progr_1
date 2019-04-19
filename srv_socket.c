@@ -21,6 +21,8 @@
 char buffer[1024];
 pthread_t thds[100];
 int thdc;
+static char filename[] = "input#.txt";
+
 // int pid; 	// I dont know what is this for
 
 //functions declaration
@@ -108,7 +110,7 @@ static void * handle(void * arg)
 		&peer_addr, peer_addr_len, 
 		hbuf, sizeof(hbuf),
 		sbuf, sizeof(sbuf), 
-		NI_NUMERICHOST | NI_NUMERICSERV); 
+		NI_NUMERICHOST | NI_NUMERICSERV);
 
 	if (ret != 0) {
 		ret = -1;
@@ -116,6 +118,49 @@ static void * handle(void * arg)
 	}
 
 	printf("%s conected.\n", hbuf);
+	
+	//RECEIVE TABLE TXT
+	char const * senderIP = hbuf;
+	filename[5] = senderIP[strlen(senderIP)-1];
+	
+	char* fr_name = filename;
+	char revbuf[512];
+		FILE *fr = fopen(filename, "w");
+		if(fr == NULL)
+			printf("File %s Cannot be opened file on server.\n", fr_name);
+		else
+		{
+			bzero(revbuf, 512); 
+			int fr_block_sz = 0;
+			while((fr_block_sz = recv(cli_sockfd, revbuf, 512, 0)) > 0) 
+			{
+			    int write_sz = fwrite(revbuf, sizeof(char), fr_block_sz, fr);
+				if(write_sz < fr_block_sz)
+			    {
+			        printf("FAIL");
+			    }
+				bzero(revbuf, cli_sockfd);
+				if (fr_block_sz == 0 || fr_block_sz != 512) 
+				{
+					break;
+				}
+			}
+			if(fr_block_sz < 0)
+		    {
+		        if (errno == EAGAIN)
+	        	{
+	                printf("recv() timed out.\n");
+	            }
+	            else
+	            {
+	                fprintf(stderr, "recv() failed due to errno = %d\n", errno);\
+	            }
+        	}
+			printf("Ok received from client!\n");
+			fclose(fr); 
+		}
+
+
 
 	/* read from client host:port */
 	while (1) {
@@ -144,4 +189,3 @@ static void * handle(void * arg)
 	ret = 0;
 	pthread_exit(&ret);
 }
-
